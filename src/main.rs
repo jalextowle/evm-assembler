@@ -43,9 +43,9 @@ fn capture_group(expression: &Regex, value: &str) -> String {
     capture[1].to_string()
 }
 
-fn sized_opcode(expression: &Regex, value: &str, start_size: u32) -> String {
+fn sized_opcode(expression: &Regex, value: &str, start_size: u32, max_size: u32) -> String {
     match capture_group(expression, value).parse::<u32>().unwrap() {
-        num@1...16 => to_hex(start_size + num),
+        num@1...max_size => to_hex(start_size + num),
         _ => panic!("Invalid opcode size")
     }
 }
@@ -54,6 +54,7 @@ fn parse(input: BufReader<File>) -> String {
     let mut expect_size = false;
     let mut result = String::from("0x");
     let dup_re = Regex::new(r"dup([0-9]+)").unwrap();
+    let log_re = Regex::new(r"log([1-4])").unwrap();
     let push_re = Regex::new(r"push([0-9]+)").unwrap();
     let swap_re = Regex::new(r"swap([0-9]+)").unwrap();
     let hex_re = Regex::new(r"0x([0-9a-f]+)").unwrap();
@@ -83,12 +84,63 @@ fn parse(input: BufReader<File>) -> String {
                     "gt" => result.push_str("11"),
                     "slt" => result.push_str("12"),
                     "sgt" => result.push_str("13"),
-                    dup if dup_re.is_match(dup) => result.push_str(&sized_opcode(&dup_re, dup, 0x7f)),
+                    "eq" => result.push_str("14"),
+                    "iszero" => result.push_str("15"),
+                    "and" => result.push_str("16"),
+                    "or" => result.push_str("17"),
+                    "xor" => result.push_str("18"),
+                    "not" => result.push_str("19"),
+                    "byte" => result.push_str("1a"),
+                    "sha3" => result.push_str("20"),
+                    "address" => result.push_str("30"),
+                    "balance" => result.push_str("31"),
+                    "origin" => result.push_str("32"),
+                    "caller" => result.push_str("33"),
+                    "callvalue" => result.push_str("34"),
+                    "calldataload" => result.push_str("35"),
+                    "calldatasize" => result.push_str("36"),
+                    "calldatacopy" => result.push_str("37"),
+                    "codesize" => result.push_str("38"),
+                    "codecopy" => result.push_str("39"),
+                    "gasprice" => result.push_str("3a"),
+                    "extcodesize" => result.push_str("3b"),
+                    "extcodecopy" => result.push_str("3c"),
+                    "returndatasize" => result.push_str("3d"),
+                    "returndatacopy" => result.push_str("3e"),
+                    "blockhash" => result.push_str("40"),
+                    "coinbase" => result.push_str("41"),
+                    "timestamp" => result.push_str("42"),
+                    "number" => result.push_str("43"),
+                    "difficulty" => result.push_str("44"),
+                    "gaslimit" => result.push_str("45"),
+                    "pop" => result.push_str("50"),
+                    "mload" => result.push_str("51"),
+                    "mstore" => result.push_str("52"),
+                    "mstore8" => result.push_str("53"),
+                    "sload" => result.push_str("54"),
+                    "sstore" => result.push_str("55"),
+                    "jump" => result.push_str("56"),
+                    "jumpi" => result.push_str("57"),
+                    "pc" => result.push_str("58"),
+                    "msize" => result.push_str("59"),
+                    "gas" => result.push_str("5a"),
+                    "jumpdest" => result.push_str("5b"),
+                    "create" => result.push_str("f0"),
+                    "call" => result.push_str("f1"),
+                    "callcode" => result.push_str("f2"),
+                    "return" => result.push_str("f3"),
+                    "delegatecall" => result.push_str("f4"),
+                    "staticcall" => result.push_str("fa"),
+                    "revert" => result.push_str("fd"),
+                    "invalid" => result.push_str("fe"),
+                    "selfdestruct" => result.push_str("ff"),
+                    dup if dup_re.is_match(dup) => result.push_str(&sized_opcode(&dup_re, dup, 0x7f, 16)),
+                    log if log_re.is_match(log) => result.push_str(&sized_opcode(&log_re, log, 0x9f, 4)),
                     push if push_re.is_match(push) => {
-                        result.push_str(&sized_opcode(&push_re, push, 0x5f));
+                        result.push_str(&sized_opcode(&push_re, push, 0x5f, 32));
                         expect_size = true;
                     }
-                    swap if swap_re.is_match(swap) => result.push_str(&sized_opcode(&swap_re, swap, 0x8f)),
+                    swap if swap_re.is_match(swap) => result.push_str(&sized_opcode(&swap_re, swap, 0x8f, 16)),
                     _ => panic!("Invalid opcode")
                 }
             }
