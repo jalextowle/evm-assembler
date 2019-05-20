@@ -1,0 +1,7 @@
+push1 0x00
+push2 0x1010
+swap3
+dup1
+push4 0xdeadbeef
+add
+stop
